@@ -1,0 +1,107 @@
+import pygame
+pygame.init()
+font = pygame.font.SysFont(None, 24)
+
+screen = pygame.display.set_mode((1200, 700))
+pygame.display.set_caption("ДЗ Картинка №2")
+
+running = True
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+    screen.fill((255,255,255))
+
+    #заливка фона
+    pygame.draw.rect(screen, (14,147,37), (0,350,1200,700))
+    pygame.draw.rect(screen, (158,234,245), (0,0,1200,350))
+    pygame.draw.rect(screen, (48,167,86), (0,349,1200,2))
+
+    #домик
+    pygame.draw.rect(screen, (55,40,6), (230,275,254,175))
+    pygame.draw.rect(screen, (147,107,14), (233,278,248,169))
+    
+    #крыша
+    pygame.draw.polygon(screen, (47,36,40), [(230,275),(484,275),(357,150)])
+    pygame.draw.polygon(screen, (124,34,45), [(232,274),(482,274),(357,152)])
+    pygame.draw.polygon(screen, (235,47,68), [(236,273),(478,273),(357,154)])
+   
+    #окно
+    pygame.draw.rect(screen, (166,102,15), (320,330,74,64))
+    pygame.draw.rect(screen, (158,107,66), (322,332,70,60))
+    pygame.draw.rect(screen, (14,147,145), (324,334,66,56))
+    
+    #ствол дерева 
+    pygame.draw.rect(screen, (8,87,22), (875, 296 ,27 ,122))
+    pygame.draw.rect(screen, (7,70,18), (876, 297 ,25 ,120))
+    pygame.draw.rect(screen, (0,0,0), (877, 298 ,23 ,118))
+
+    #листва
+    pygame.draw.circle(screen, (15,83,14),(883,165),40)
+    pygame.draw.circle(screen, (18,44,26),(883,165),40,4)
+    pygame.draw.circle(screen, (12,55,13),(883,165),38,2)
+
+    pygame.draw.circle(screen, (15,83,14),(935,205),40)
+    pygame.draw.circle(screen, (18,44,26),(935,205),40,4)
+    pygame.draw.circle(screen, (12,55,13),(935,205),38,2)
+
+    pygame.draw.circle(screen, (15,83,14),(835,210),40)
+    pygame.draw.circle(screen, (18,44,26),(835,210),40,4)
+    pygame.draw.circle(screen, (12,55,13),(835,210),38,2)
+
+    pygame.draw.circle(screen, (15,83,14),(885,235),40) 
+    pygame.draw.circle(screen, (18,44,26),(885,235),40,4)
+    pygame.draw.circle(screen, (12,55,13),(885,235),38,2)
+    
+    pygame.draw.circle(screen, (15,83,14),(850,270),40)
+    pygame.draw.circle(screen, (18,44,26),(850,270),40,4)
+    pygame.draw.circle(screen, (12,55,13),(850,270),38,2)
+        
+    pygame.draw.circle(screen, (15,83,14),(920,278),40)
+    pygame.draw.circle(screen, (18,44,26),(920,278),40,4)
+    pygame.draw.circle(screen, (12,55,13),(920,278),38,2)
+
+    #облако
+    pygame.draw.circle(screen, (254,249,249),(590,100),40)
+    pygame.draw.circle(screen, (109,106,106),(590,100),40,2)
+    pygame.draw.circle(screen, (60,59,59),(590,100),39,1)
+    pygame.draw.circle(screen, (113,165,172),(590,100),41,1)
+
+    pygame.draw.circle(screen, (254,249,249),(630,100),40)
+    pygame.draw.circle(screen, (109,106,106),(630,100),40,2)
+    pygame.draw.circle(screen, (60,59,59),(630,100),39,1)
+    pygame.draw.circle(screen, (113,165,172),(630,100),41,1)
+
+    pygame.draw.circle(screen, (254,249,249),(670,100),40)
+    pygame.draw.circle(screen, (109,106,106),(670,100),40,2)
+    pygame.draw.circle(screen, (60,59,59),(670,100),39,1)
+    pygame.draw.circle(screen, (113,165,172),(670,100),41,1)
+
+    pygame.draw.circle(screen, (254,249,249),(710,100),40)
+    pygame.draw.circle(screen, (109,106,106),(710,100),40,2)
+    pygame.draw.circle(screen, (60,59,59),(710,100),39,1)
+    pygame.draw.circle(screen, (113,165,172),(710,100),41,1)
+
+    pygame.draw.circle(screen, (254,249,249),(680,77),40)
+    pygame.draw.circle(screen, (109,106,106),(680,77),40,2)
+    pygame.draw.circle(screen, (60,59,59),(680,77),39,1)
+    pygame.draw.circle(screen, (113,165,172),(680,77),41,1)
+
+    pygame.draw.circle(screen, (254,249,249),(630,77),40)
+    pygame.draw.circle(screen, (109,106,106),(630,77),40,2)
+    pygame.draw.circle(screen, (60,59,59),(630,77),39,1)
+    pygame.draw.circle(screen, (113,165,172),(630,77),41,1)
+
+    #"солнце"
+    #pygame.draw.polygon(screen, (205,160,160), [(1070,30),(1077,34),(1082,31),(1088,43),(1094,39),(1100,58),(1112,55),(1114,64),(1120,75),(1115,80),(1110,90),
+                                               #(1105,90),(1107,100),(1098,106),(1094, 113),(1090,116),(1085,120),(1077,110),(1071,134)])
+    #pygame.draw.circle(screen, (249,194,194),(1070,80),45)
+    pygame.draw.polygon(screen, (249,194,194), [(1020,80), (1025,74), (1022,66), (1027,54),(1028,57),(1037,43), (1040,50), (1052,35), (1057,42), (1070,30), (1083,42),(1088,35),(1100,50),(1103,43),(1112,57),(1113,54),(1118,66),(1115,74),(1120,80),(1115,86),(1118,94),(1113,106),(1112,103),(1103,117),(1100,110),(1088,125),(1083,118),(1070,130),(1057,118),(1052,125),(1040,110),(1037,117),(1028,103),(1027,106),(1022,94),(1025,86),(1020,80)])
+    
+    mx, my = pygame.mouse.get_pos()
+    text = font.render(f"x: {mx}, y: {my}", True, (0, 0, 0))
+    screen.blit(text, (10, 10))
+    pygame.display.flip()
+    
+pygame.quit()
