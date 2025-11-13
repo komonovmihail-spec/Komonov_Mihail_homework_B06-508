@@ -1,0 +1,311 @@
+import pygame
+import math
+import random
+
+pygame.init()
+
+# Настройки экрана
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 600
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
+pygame.display.set_caption("Инопланетное вторжение!")
+
+# Цвета
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
+ORANGE = (255, 165, 0)
+BROWN = (139, 69, 19)
+GRAY = (128, 128, 128)
+
+TARGET_SIZE = 90  # Размер мишени (для проверки столкновения)
+
+# Загрузка изображений
+background = pygame.image.load("background.png") # Фон
+background = pygame.transform.scale(background, (SCREEN_WIDTH, SCREEN_HEIGHT))
+
+target_image = pygame.image.load("target.png") # Мишень
+target_image = pygame.transform.scale(target_image, (90, 90))
+    
+cannonball_image = pygame.image.load("cannonball.png").convert() # Снаряд
+cannonball_image.set_colorkey((0, 0, 0))  # Убирает черный цвет фона картинки
+cannonball_image = pygame.transform.scale(cannonball_image, (50, 50))
+
+# Звуки
+pygame.mixer.init()
+
+shoot_sound = pygame.mixer.Sound("shoot.wav") # Звук выстрела
+
+hit_sound = pygame.mixer.Sound("hit.wav") # Звук попадания
+
+pygame.mixer.music.load("background.mp3") # Фоновая музыка           
+pygame.mixer.music.play(-1)     
+
+# Параметры пушки
+cannon_x = 50
+cannon_y = SCREEN_HEIGHT - 50
+cannon_length = 60 # Длина ствола пушки
+angle = 45
+power = 15
+
+# Снаряды (список)
+projectiles = []
+
+# Мишени (списки)
+targets = []
+num_targets = random.randint(3, 8) # Рандомное число мишений
+for i in range(num_targets):
+    x = random.randint(300, SCREEN_WIDTH - 100) # Рандомное положение по х
+    y = random.randint(50, SCREEN_HEIGHT - 200) # Рандомное положение по у
+    speed = random.uniform(1, 3) # Рандомная скорость 
+    direction = random.choice([-1, 1]) # Рандомное направление движение по х
+    alive = True # Не сбитый = живой
+    targets.append([x, y, TARGET_SIZE, TARGET_SIZE, speed, direction, alive]) # Добавляем все параметры в писок
+
+# Счет
+score = 0 # Текущие очки
+score_win = 1000 # Необходимо очков для победы
+victory = False  # Флаг победы
+victory_timer = 0 # Счетчик кадров для мигания (анимации победы)
+font = pygame.font.Font(None, 36)
+big_font = pygame.font.Font(None, 48)
+
+# Физика
+gravity = 0.3 # Гравитация
+
+# Флаги для музыки
+music_playing = True
+music_paused = False
+music_available = True
+
+# Основной игровой цикл
+running = True
+clock = pygame.time.Clock()
+
+while running:
+    clock.tick(60) # Ограничение FPS 
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+            
+        # Изменение размера окна
+        elif event.type == pygame.VIDEORESIZE:
+            SCREEN_WIDTH, SCREEN_HEIGHT = event.w, event.h
+            screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
+
+            # Масштабируем фон
+            if background:
+                background = pygame.transform.scale(background, (SCREEN_WIDTH, SCREEN_HEIGHT))
+
+            # Пушка всегда внизу экрана
+            cannon_y = SCREEN_HEIGHT - 50
+
+            # Коррекция мишеней, если они выходят за границы
+            for target in targets:
+                if target[0] > SCREEN_WIDTH - target[2]:
+                    target[0] = SCREEN_WIDTH - target[2]
+                if target[1] > SCREEN_HEIGHT - 200:
+                    target[1] = SCREEN_HEIGHT - 200
+
+        elif event.type == pygame.KEYDOWN: # Клавиши UP/DOWN/W/S не работают, пока victory = True
+            # Управление углом
+            if event.key == pygame.K_UP:
+                if not victory:
+                    angle = min(angle + 5, 85)
+            elif event.key == pygame.K_DOWN:
+                if not victory:
+                    angle = max(angle - 5, 5)
+            # Управление силой
+            elif event.key == pygame.K_w:
+                if not victory:
+                    power = min(power + 1, 30)
+            elif event.key == pygame.K_s:
+                if not victory:
+                    power = max(power - 1, 5)
+            # Выстрел
+            elif event.key == pygame.K_SPACE:
+                if not victory: # Во время анимации победы нельзя будет стрелять
+                    rad = math.radians(angle)
+                    vx = power * math.cos(rad)
+                    vy = -power * math.sin(rad)
+            
+            # Словари для выстрелов    
+                    projectiles.append({
+                        "x": cannon_x + cannon_length * math.cos(rad),
+                        "y": cannon_y - cannon_length * math.sin(rad),
+                        "vx": vx,
+                        "vy": vy,
+                        "radius": 10 # Размер снаряда
+                    })
+                    if shoot_sound:
+                        shoot_sound.play() # Звук выстрела
+            # Музыка
+            elif event.key == pygame.K_m and music_available:
+                if not music_playing:
+                    pygame.mixer.music.play(-1)
+                    music_playing = True
+                    music_paused = False
+                elif music_paused:
+                    pygame.mixer.music.unpause()
+                    music_paused = False
+                else:
+                    pygame.mixer.music.pause()
+                    music_paused = True
+            elif event.key == pygame.K_r and victory:
+                # Сброс игры
+                score = 0
+                victory = False
+                projectiles = []
+                targets = []
+                num_targets = random.randint(3, 8)
+                for i in range(num_targets):
+                    x = random.randint(300, SCREEN_WIDTH - 100)
+                    y = random.randint(50, SCREEN_HEIGHT - 200)
+                    speed = random.uniform(1, 3)
+                    direction = random.choice([-1, 1])
+                    alive = True
+                    targets.append([x, y, TARGET_SIZE, TARGET_SIZE, speed, direction, alive])
+                    
+        # Тоже самое только, если пользователь управляет мышкой
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:
+                if not victory: # Во время анимации победы нельзя будет стрелять
+                    rad = math.radians(angle)
+                    vx = power * math.cos(rad)
+                    vy = -power * math.sin(rad)
+                    projectiles.append({
+                        "x": cannon_x + cannon_length * math.cos(rad),
+                        "y": cannon_y - cannon_length * math.sin(rad),
+                        "vx": vx,
+                        "vy": vy,
+                        "radius": 10 # Размер снаряда
+                    })
+                    if shoot_sound:
+                        shoot_sound.play() # Звук выстрела
+
+    # Обновление мишеней (мишени двигаются только пока victory = False)
+    for target in targets:
+        if target[6] and not victory:  # Добавление 'and not victory' позволяет мишеням не двигаться во время анимации победы, target[6] = alive
+            target[0] += target[4] * target[5]
+            if target[0] <= 0 or target[0] >= SCREEN_WIDTH - target[2]:
+                target[5] *= -1
+
+    # Обновление снарядов (обращение по ключам)
+    for proj in projectiles[:]: # Создает копию списка. Это ([:]) нужно для безопасного удаления элементов во время перебора
+        proj["vy"] += gravity
+        proj["x"] += proj["vx"]
+        proj["y"] += proj["vy"]
+   
+    # Проверка, улетел ли снаряд за границы экрана (лево, право, низ)
+        if proj["x"] < 0 or proj["x"] > SCREEN_WIDTH or proj["y"] > SCREEN_HEIGHT:
+            projectiles.remove(proj) # Удаляем его из списка
+            continue # Функция continue означает "забудь про этот снаряд и переходи к следующему", чтобы не проверять столкновение с уже удаленным за экран снарядом
+
+        # Проверка столкновений (также через ключи)
+        proj_rect = pygame.Rect(proj["x"] - proj["radius"], proj["y"] - proj["radius"],
+                                proj["radius"] * 2, proj["radius"] * 2) # Создаем прямоугольник (hitbox) вокруг снаряда для проверки столкновений
+        # Левая граница: x - радиус, верхняя граница: y - радиус, ширина: диаметр, высота: диаметр
+        
+        for target in targets:
+            if target[6]:  # alive
+                target_rect = pygame.Rect(target[0], target[1], target[2], target[3])
+                if proj_rect.colliderect(target_rect):
+                    target[6] = False
+                    score += 10
+                    if hit_sound:
+                        hit_sound.play() # Звук попадания
+                    if proj in projectiles:
+                        projectiles.remove(proj) # Удаляем снаряд, попавший в цель
+                    break
+    if score >= score_win and not victory: # Если игрок набрал больше необходимого количества очков, то анимация победы
+        victory = True
+        victory_timer = pygame.time.get_ticks()
+        projectiles.clear() # Сразу удаляет все снаряды с экрана в момент победы
+                        
+    # Проверка уничтожения всех мишеней
+    if all(not t[6] for t in targets): # all(...) — возвращает True только если ВСЕ мишени мертвы (all() проверяет, что все мишени уничтожены, если да — код очищает поле и создает новую волну)
+        targets = [] # Удаляем все мертвые мишени
+        num_targets = random.randint(3, 8) # Рандомное число мишений
+        for i in range(num_targets):
+            x = random.randint(300, SCREEN_WIDTH - 100)
+            y = random.randint(50, SCREEN_HEIGHT - 200)
+            speed = random.uniform(1, 3)
+            direction = random.choice([-1, 1])
+            alive = True
+            targets.append([x, y, TARGET_SIZE, TARGET_SIZE, speed, direction, alive]) # Добавляем живую мишень в список
+            # Это как "Новый раунд" — игрок уничтожил все мишени, поэтому появляются новые
+
+    # Отрисовка фона
+    if background:
+        screen.blit(background, (0, 0))
+    
+    # Пушка (отрисовкой)
+    rad = math.radians(angle)
+    cannon_end_x = cannon_x + cannon_length * math.cos(rad)
+    cannon_end_y = cannon_y - cannon_length * math.sin(rad)
+    pygame.draw.line(screen, BROWN, (cannon_x, cannon_y), (cannon_end_x, cannon_end_y), 15)
+    pygame.draw.circle(screen, GRAY, (cannon_x, cannon_y), 20)
+    pygame.draw.circle(screen, BLACK, (cannon_x, cannon_y), 20, 3)
+
+    # Снаряды
+    for proj in projectiles:
+        if cannonball_image:
+            screen.blit(cannonball_image, (int(proj["x"] - proj["radius"]), int(proj["y"] - proj["radius"])))
+        
+    # Мишени (не рисуем при победе) (при победе все живые мишени невидимы, даже если они не сбиты)
+    for target in targets:
+        if target[6] and not victory: # not victory делает так, что мишени не риуются при победе
+            if target_image:
+                screen.blit(target_image, (int(target[0]), int(target[1])))
+            
+    # Траектория снарядов (при победе не рисуем)
+    if not victory and len(projectiles) == 0: # Траектория не рисуется, пока victory = True
+        points = []
+        temp_x = cannon_x + cannon_length * math.cos(rad)
+        temp_y = cannon_y - cannon_length * math.sin(rad)
+        temp_vx = power * math.cos(rad)
+        temp_vy = -power * math.sin(rad)
+        for i in range(500):
+            temp_vy += gravity
+            temp_x += temp_vx
+            temp_y += temp_vy
+            if temp_x < 0 or temp_x > SCREEN_WIDTH or temp_y > SCREEN_HEIGHT:
+                break
+            points.append((int(temp_x), int(temp_y)))
+        if len(points) > 1:
+            pygame.draw.lines(screen, WHITE, False, points, 2)
+
+    # Интерфейс
+    text_angle = font.render(f"Угол: {angle}°", True, RED)
+    text_power = font.render(f"Сила: {power}", True, RED)
+    text_score = font.render(f"Счёт: {score}", True, RED)
+    text_controls = font.render("UP/DOWN - угол, W/S - сила, SPACE/MOUSE - выстрел, M - музыка", True, BLUE)
+    
+    screen.blit(text_angle, (10, 10))
+    screen.blit(text_power, (10, 50))
+    screen.blit(text_score, (10, 90))
+    screen.blit(text_controls, (10, SCREEN_HEIGHT - 30))
+
+    if not victory and score < score_win: # Показывает, сколько очков нужно до победы
+        remaining = score_win - score
+        text_remaining = font.render(f"До победы: {remaining}", True, GREEN)
+        screen.blit(text_remaining, (10, 130))
+
+    if victory:
+        # Мигающая анимация победы
+        if (pygame.time.get_ticks() - victory_timer) // 500 % 2 == 0: # pygame.time.get_ticks() возвращает время в миллисекундах с момента запуска игры, (- victory_timer) вычитаем время, когда победа произошла. Получаем прошедшее время с победы. Делим на 500 и отбрасываем остаток. Это создает "куски" по 500 мс: текст появляется на полсекунды, исчезает на полсекунды, и так по кругу
+            victory_text = big_font.render("Ты остановил инопланетное вторжение!", True, GREEN)
+            text_rect = victory_text.get_rect(center=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2 - 20)) # center=(...) (атрибут Rect, кортеж из двух чисел (x, y), который задает центральную точку прямоугольника) — устанавливает центр этого прямоугольника в заданные координаты
+            screen.blit(victory_text, text_rect)
+    
+            # Надпись R для рестарта
+            restart_text = font.render("Нажмите R, чтобы начать заново", True, WHITE)
+            restart_rect = restart_text.get_rect(center=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2 + 40)) # center=(...) (атрибут Rect, кортеж из двух чисел (x, y), который задает центральную точку прямоугольника) — устанавливает центр этого прямоугольника в заданные координаты
+            screen.blit(restart_text, restart_rect)
+
+    pygame.display.flip()
+
+pygame.quit()
