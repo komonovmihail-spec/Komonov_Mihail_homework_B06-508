@@ -1,0 +1,257 @@
+import pygame  
+import math    
+import random  
+
+pygame.init()  
+screen = pygame.display.set_mode((800, 600), pygame.RESIZABLE)  
+pygame.display.set_caption("Солнечная система")  
+WIDTH, HEIGHT = 800, 600  
+cx = WIDTH // 2  # Вычисление центра окна по горизонтали (400)
+cy = HEIGHT // 2  # Вычисление центра окна по вертикали (300)
+FPS = 60  # Установка желаемой частоты кадров в секунду (60 FPS)
+clock = pygame.time.Clock()  # Создание объекта часов для контроля скорости анимации
+
+# Цвета
+BLACK = (0, 0, 0)  
+WHITE = (255, 255, 255)  
+YELLOW = (255, 255, 0)  
+RED = (255, 0, 0) 
+GRAY = (128, 128, 128)  
+ORANGE = (255, 165, 0)  
+CYAN = (0, 255, 255) 
+DARK_BLUE = (0, 0, 139)  
+BLUE = (0, 0, 255) 
+
+# ==================== КЛАССЫ ====================
+
+class Planet:  # Определение класса Planet для создания планет
+    """Класс планеты для вращения вокруг Солнца"""  # Документация класса
+    def __init__(self, screen, radius, orbit_radius, color=None, speed=0, angle=0, image_path=None):  # Конструктор класса
+        self.screen = screen  # Сохранение ссылки на игровой экран
+        self.radius = radius  # Сохранение радиуса планеты
+        self.orbit_radius = orbit_radius  # Сохранение радиуса орбиты (расстояния от Солнца)
+        self.color = color  # Сохранение цвета планеты (если нет изображения)
+        self.speed = speed  # Сохранение угловой скорости вращения
+        self.angle = angle  # Сохранение начального угла на орбите
+        self.x = 0  # Инициализация координаты X (будет вычислена позже)
+        self.y = 0  # Инициализация координаты Y (будет вычислена позже)
+        self.image = None  # Инициализация переменной для хранения изображения
+        if image_path:  # Проверка, был ли передан путь к изображению
+            self.image = pygame.image.load(image_path).convert_alpha()  # Загрузка изображения с поддержкой прозрачности
+            self.image = pygame.transform.scale(self.image, (radius*2, radius*2))  # Масштабирование изображения до нужного размера
+    
+    def update(self, dt):  # Метод обновления позиции планеты
+        """Обновление позиции на орбите"""  # Документация метода
+        self.angle += self.speed * dt  # Увеличение угла на орбите (speed * прошедшее время)
+        self.x = cx + self.orbit_radius * math.cos(self.angle)  # Вычисление координаты X по формуле окружности
+        self.y = cy + self.orbit_radius * math.sin(self.angle)  # Вычисление координаты Y по формуле окружности
+    
+    def draw(self):  # Метод отрисовки планеты
+        """Отрисовка планеты"""  # Документация метода
+        if self.image:  # Если изображение загружено
+            self.screen.blit(self.image, (int(self.x - self.radius), int(self.y - self.radius)))  # Отрисовка изображения на экране
+        else:  # Если изображения нет
+            pygame.draw.circle(self.screen, self.color, (int(self.x), int(self.y)), self.radius)  # Отрисовка круга заданного цвета
+
+
+class Moon:  # Определение класса Moon для создания спутника (Луны)
+    """Класс спутника для вращения вокруг планеты"""  # Документация класса
+    def __init__(self, screen, planet, radius, orbit_radius, color=None, speed=0, angle=0, image_path=None):  # Конструктор класса
+        self.screen = screen  # Сохранение ссылки на игровой экран
+        self.planet = planet  # Сохранение ссылки на планету-родителя (вокруг которой вращается)
+        self.radius = radius  # Сохранение радиуса спутника
+        self.orbit_radius = orbit_radius  # Сохранение радиуса орбиты вокруг планеты
+        self.color = color  # Сохранение цвета спутника (если нет изображения)
+        self.speed = speed  # Сохранение угловой скорости вращения
+        self.angle = angle  # Сохранение начального угла
+        self.x = 0  # Инициализация координаты X
+        self.y = 0  # Инициализация координаты Y
+        self.image = None  # Инициализация переменной для хранения изображения
+        if image_path:  # Проверка, был ли передан путь к изображению
+            self.image = pygame.image.load(image_path).convert_alpha()  # Загрузка изображения с поддержкой прозрачности
+            self.image = pygame.transform.scale(self.image, (radius*2, radius*2))  # Масштабирование изображения
+    
+    def update(self, dt):  # Метод обновления позиции спутника
+        """Обновление позиции вокруг планеты"""  # Документация метода
+        self.angle += self.speed * dt  # Увеличение угла на орбите
+        self.x = self.planet.x + self.orbit_radius * math.cos(self.angle)  # Вычисление X относительно планеты-родителя
+        self.y = self.planet.y + self.orbit_radius * math.sin(self.angle)  # Вычисление Y относительно планеты-родителя
+    
+    def draw(self):  # Метод отрисовки спутника
+        """Отрисовка спутника"""  # Документация метода
+        if self.image:  # Если изображение загружено
+            self.screen.blit(self.image, (int(self.x - self.radius), int(self.y - self.radius)))  # Отрисовка изображения
+        else:  # Если изображения нет
+            pygame.draw.circle(self.screen, self.color, (int(self.x), int(self.y)), self.radius)  # Отрисовка круга
+
+
+class Asteroid:  # Определение класса Asteroid для создания астероидов
+    """Класс астероида для пояса астероидов"""  # Документация класса
+    def __init__(self, screen, orbit_radius, speed, angle, radius=3):  # Конструктор класса
+        self.screen = screen  # Сохранение ссылки на игровой экран
+        self.orbit_radius = orbit_radius  # Сохранение радиуса орбиты
+        self.speed = speed  # Сохранение угловой скорости
+        self.angle = angle  # Сохранение начального угла
+        self.radius = radius  # Сохранение радиуса астероида
+        self.x = 0  # Инициализация координаты X
+        self.y = 0  # Инициализация координаты Y
+    
+    def update(self, dt):  # Метод обновления позиции астероида
+        """Обновление позиции астероида"""  # Документация метода
+        self.angle += self.speed * dt  # Увеличение угла
+        self.x = cx + self.orbit_radius * math.cos(self.angle)  # Вычисление координаты X
+        self.y = cy + self.orbit_radius * math.sin(self.angle)  # Вычисление координаты Y
+    
+    def draw(self):  # Метод отрисовки астероида
+        """Отрисовка астероида"""  # Документация метода
+        pygame.draw.circle(self.screen, GRAY, (int(self.x), int(self.y)), self.radius)  # Отрисовка серого круга
+
+
+class Comet:  # Определение класса Comet для создания кометы
+    """Класс кометы с эллиптической орбитой"""  # Документация класса
+    def __init__(self, screen, perihelion, aphelion, speed):  # Конструктор класса
+        self.screen = screen  # Сохранение ссылки на игровой экран
+        self.perihelion = perihelion  # Сохранение перигелия (ближайшей точки к Солнцу)
+        self.aphelion = aphelion  # Сохранение афелия (дальнейшей точки от Солнца)
+        self.speed = speed  # Сохранение угловой скорости
+        self.angle = random.uniform(0, 2 * math.pi)  # Генерация случайного начального угла
+        self.x = 0  # Инициализация координаты X
+        self.y = 0  # Инициализация координаты Y
+        self.a = (self.aphelion + self.perihelion) / 2  # Вычисление большой полуоси эллипса
+        self.e = (self.aphelion - self.perihelion) / (self.aphelion + self.perihelion)  # Вычисление эксцентриситета эллипса
+    
+    def update(self, dt):  # Метод обновления позиции кометы
+        """Обновление позиции кометы по эллиптической орбите"""  # Документация метода
+        self.angle += self.speed * dt  # Увеличение угла
+        r = self.a * (1 - self.e**2) / (1 + self.e * math.cos(self.angle))  # Расчет текущего расстояния по формуле эллипса
+        self.x = cx + r * math.cos(self.angle)  # Вычисление координаты X
+        self.y = cy + r * math.sin(self.angle)  # Вычисление координаты Y
+    
+    def draw(self):  # Метод отрисовки кометы
+        """Отрисовка кометы"""  # Документация метода
+        pygame.draw.circle(self.screen, WHITE, (int(self.x), int(self.y)), 4)  # Отрисовка белого круга размером 4 пикселя
+
+# ==================== ИНИЦИАЛИЗАЦИЯ ====================
+
+# Загрузка фоновой музыки
+pygame.mixer.init()  # Инициализация модуля для работы со звуком и музыкой
+pygame.mixer.music.load('space.mp3')  # Загрузка файла фоновой музыки
+pygame.mixer.music.play(-1)  # Начало воспроизведения музыки в бесконечном цикле (-1 зацикливает)
+pygame.mixer.music.set_volume(0.5)  # Установка громкости музыки на 50%
+
+# Солнце
+sun_radius = 30  # Установка радиуса Солнца в 30 пикселей
+
+# Создание планет
+mercury = Planet(screen, radius=6, orbit_radius=60, speed=4.15, color=GRAY, image_path="mercury.png")  # Создание объекта Меркурий
+venus = Planet(screen, radius=9, orbit_radius=90, speed=1.62, color=(255, 198, 73), image_path="venus.png")  # Создание объекта Венера
+earth = Planet(screen, radius=10, orbit_radius=120, speed=1.0, color=BLUE, image_path="earth.png")  # Создание объекта Земля
+mars = Planet(screen, radius=8, orbit_radius=150, speed=0.53, color=RED, image_path="mars.png")  # Создание объекта Марс
+jupiter = Planet(screen, radius=25, orbit_radius=220, speed=0.084, color=ORANGE, image_path="jupiter.png")  # Создание объекта Юпитер
+saturn = Planet(screen, radius=20, orbit_radius=280, speed=0.034, color=(250, 230, 140), image_path="saturn.png")  # Создание объекта Сатурн
+uranus = Planet(screen, radius=15, orbit_radius=340, speed=0.012, color=CYAN, image_path="uranus.png")  # Создание объекта Уран
+neptune = Planet(screen, radius=14, orbit_radius=400, speed=0.006, color=DARK_BLUE, image_path="neptune.png")  # Создание объекта Нептун
+
+planets = [mercury, venus, earth, mars, jupiter, saturn, uranus, neptune]  # Создание списка всех планет
+
+# Луна
+moon = Moon(screen, planet=earth, radius=3, orbit_radius=20, speed=12, color=WHITE, image_path="moon.png")  # Создание объекта Луна вокруг Земли
+
+# Пояс астероидов
+asteroid_belt = []  # Создание пустого списка для хранения астероидов
+for i in range(20):  # Цикл для создания 20 астероидов
+    orbit_r = random.randint(170, 200)  # Генерация случайного радиуса орбиты от 170 до 200
+    speed = random.uniform(0.3, 0.8)  # Генерация случайной скорости от 0.3 до 0.8
+    angle = random.uniform(0, 2 * math.pi)  # Генерация случайного начального угла
+    asteroid_belt.append(Asteroid(screen, orbit_r, speed, angle))  # Добавление нового астероида в список
+
+# Комета
+comet = Comet(screen, perihelion=250, aphelion=450, speed=0.02)  # Создание объекта кометы
+
+# Интерактивные переменные
+paused = False  # Флаг паузы игры (False = игра идет)
+speed_multiplier = 1.0  # Множитель скорости анимации (1.0 = нормальная скорость)
+font = pygame.font.Font(None, 24)  # Создание шрифта для отображения текста
+
+# ==================== ФУНКЦИИ ====================
+
+def draw_ui():  # Определение функции draw_ui (отрисовка пользовательского интерфейса)
+    """Отрисовка интерфейса"""  # Документация функции
+    speed_text = font.render(f"Скорость: {speed_multiplier:.1f}x", True, WHITE)  # Создание текстовой поверхности с текущей скоростью
+    screen.blit(speed_text, (10, 10))  # Отрисовка текста в позиции (10, 10)
+    
+    if paused:  # Если игра на паузе
+        pause_text = font.render("ПАУЗА (Пробел)", True, RED)  # Создание текста "ПАУЗА" красного цвета
+        screen.blit(pause_text, (WIDTH // 2 - 70, 10))  # Отрисовка текста по центру вверху
+    
+    controls_text = font.render(  # Создание текста с управлением
+        "Пробел: пауза | Колесо мыши: +/- скорость | M: музыка вкл/выкл", 
+        True, WHITE  # True = сглаживание, WHITE = цвет текста
+    )
+    screen.blit(controls_text, (10, HEIGHT - 25))  # Отрисовка текста внизу слева
+
+# ==================== ИГРОВОЙ ЦИКЛ ====================
+
+running = True  # Флаг работы игрового цикла (True = игра продолжается)
+while running:  # Главный игровой цикл (повторяется пока running = True)
+    dt = clock.tick(FPS) / 1000.0  # Ограничение FPS и получение времени между кадрами в секундах (деление на 1000)
+    
+    for event in pygame.event.get():  # Получение всех событий из очереди (цикл по каждому событию)
+        if event.type == pygame.QUIT:  # Если тип события = закрытие окна
+            running = False  # Установка флага в False для выхода из цикла
+        
+        elif event.type == pygame.VIDEORESIZE:  # Если изменился размер окна
+            WIDTH, HEIGHT = event.w, event.h  # Обновление переменных с новыми шириной и высотой
+            screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)  # Пересоздание окна с новыми размерами
+            cx = WIDTH // 2  # Пересчет центра по горизонтали
+            cy = HEIGHT // 2  # Пересчет центра по вертикали
+        
+        elif event.type == pygame.KEYDOWN:  # Если нажата клавиша на клавиатуре
+            if event.key == pygame.K_SPACE:  # Если нажат пробел
+                paused = not paused  # Инвертирование флага паузы (True ↔ False)
+            elif event.key == pygame.K_m:  # Если нажата клавиша M
+                if pygame.mixer.music.get_busy():  # Проверка, играет ли музыка в данный момент
+                    pygame.mixer.music.pause()  # Если играет - поставить на паузу
+                else:
+                    pygame.mixer.music.unpause()  # Если не играет - продолжить воспроизведение
+        
+        elif event.type == pygame.MOUSEBUTTONDOWN:  # Если нажата кнопка мыши
+            if event.button == 4:  # Если кручено колесо мыши вверх (увеличение)
+                speed_multiplier = min(speed_multiplier + 0.5, 10.0)  # Увеличение скорости (максимум 10x)
+            elif event.button == 5:  # Если кручено колесо мыши вниз (уменьшение)
+                speed_multiplier = max(speed_multiplier - 0.5, 0.1)  # Уменьшение скорости (минимум 0.1x)
+    
+    if not paused:  # Если игра не на паузе (условие для обновления объектов)
+        for planet in planets:  # Цикл по всем планетам в списке
+            planet.update(dt * speed_multiplier)  # Вызов метода update каждой планеты с учетом множителя скорости
+        
+        moon.update(dt * speed_multiplier)  # Обновление позиции Луны
+        
+        for asteroid in asteroid_belt:  # Цикл по всем астероидам
+            asteroid.update(dt * speed_multiplier)  # Обновление позиции каждого астероида
+        
+        comet.update(dt * speed_multiplier)  # Обновление позиции кометы
+    
+    # ==================== ОТРИСОВКА ====================
+    
+    screen.fill(BLACK)  # Заливка всего экрана черным цветом (очистка предыдущего кадра)
+    
+    for planet in planets:  # Цикл по всем планетам
+        pygame.draw.circle(screen, (30, 30, 50), (cx, cy), planet.orbit_radius, 1)  # Отрисовка тонкой линии орбиты (цвет, центр, радиус, толщина)
+    
+    pygame.draw.circle(screen, YELLOW, (cx, cy), sun_radius)  # Отрисовка Солнца как желтого круга
+    
+    for planet in planets:  # Цикл по всем планетам
+        planet.draw()  # Вызов метода draw каждой планеты (отрисовка планеты)
+    
+    moon.draw()  # Отрисовка Луны
+    
+    for asteroid in asteroid_belt:  # Цикл по всем астероидам
+        asteroid.draw()  # Отрисовка каждого астероида
+    
+    comet.draw()  # Отрисовка кометы
+    
+    draw_ui()  # Вызов функции отрисовки пользовательского интерфейса
+    pygame.display.flip()  # Обновление всего экрана (отображение всего, что было нарисовано)
+
+pygame.quit()  # Корректное закрытие Pygame и освобождение ресурсов
